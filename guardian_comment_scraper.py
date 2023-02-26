@@ -6,6 +6,8 @@ import pandas as pd
 import re
 import string
 
+script_dir = Path(__file__).parent.absolute()
+
 def get_discussion_id(url:str) -> str:
     """
     Find discussion ID from url
@@ -24,7 +26,7 @@ def save_json(data, title) -> None:
     """
     try:
         script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-        data_folder = script_dir / str(title)
+        data_folder = script_dir / 'data' / str(title)
         # Create data folder
         data_folder.mkdir(parents=True, exist_ok=True)
         with open(data_folder / 'discussion.json', 'w', encoding='utf-8') as f:
@@ -50,7 +52,7 @@ def maxqda_format(all_data, title:str, save:bool):
             script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
             try:
                 # Create data folder
-                data_folder = script_dir / str(title)
+                data_folder = script_dir / 'data' / str(title)
                 data_folder.mkdir(parents=True, exist_ok=True)
             except OSError:
                 data_folder = script_dir / 'article'
@@ -63,8 +65,8 @@ def maxqda_format(all_data, title:str, save:bool):
 
 def main():
     ### CHANGE THESE ###
-    url = 'https://www.theguardian.com/sport/2022/sep/11/jon-rahms-stunning-62-puts-him-in-contention-at-pga-championship'
-    save = False
+    url = 'https://www.theguardian.com/tv-and-radio/tvandradioblog/2014/may/12/generation-war-bbc-nazi-germany'
+    save = True
     ####################
 
 
