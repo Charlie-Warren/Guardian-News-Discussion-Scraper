@@ -28,12 +28,16 @@ def get_discussion_id(url:str) -> str:
     """
     Find discussion ID from url
     """
-    response = requests.get(url)
-    response.raise_for_status()
-    x = str(response.content)
-    mylist = x.split('\"shortUrlId\":', maxsplit=1)
-    bl = mylist[1].split(',', maxsplit=1)
-    id = bl[0].strip('\"')
+    id = ""
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        x = str(response.content)
+        mylist = x.split('\"shortUrlId\":', maxsplit=1)
+        bl = mylist[1].split(',', maxsplit=1)
+        id = bl[0].strip('\"')
+    except:
+        print(f"Failed to retrieve discussion ID for \"{url}\"")
     return id
 
 
@@ -66,13 +70,14 @@ def remove_html_tags(text:str) -> str:
     return re.sub(clean, '', text)
 
 
-def maxqda_format(all_data, title:str, save:bool):
+def maxqda_format(all_data, title:str, save:bool, printdf=False):
     """Creates a dataframe from the input data. Formats the dataframe for use with MAXQDA, and optionally saves."""
     # number, , name, date and time, likes, pinned, comment
     data_df = pd.DataFrame(all_data)
     rows = list(range(1, len(data_df)+1))
     data_df.index = rows
-    print(data_df)
+    if printdf:
+        print(data_df)
     if save:
         try:
             script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
@@ -130,13 +135,15 @@ def main():
     save = True
     
     for url in urls:
+        print(f"\nGetting comments from \"{url}\"")
         data_dict = get_guardian_json(url)
-        data_rows, title = parse_json(data_dict)
-        print(f"Title: {title}")
-        cleaned_title = clean_string(title)
-        maxqda_format(data_rows, cleaned_title, save)
-        if save:
-            save_json(data_dict, cleaned_title)
+        if data_dict["status"] != "error":
+            data_rows, title = parse_json(data_dict)
+            print(f"Title: {title}")
+            cleaned_title = clean_string(title)
+            maxqda_format(data_rows, cleaned_title, save)
+            if save:
+                save_json(data_dict, cleaned_title)
 
 
 if __name__ == '__main__':
