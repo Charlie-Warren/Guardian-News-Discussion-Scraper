@@ -6,7 +6,23 @@ import pandas as pd
 import re
 import string
 
+
 script_dir = Path(__file__).parent.absolute()
+
+
+def read_urls(fname:str="urls.txt") -> list[str]:
+    """
+    Read urls from text file.
+    """
+    lines = []
+    try:
+        with open(script_dir / fname, "r") as f:
+            lines = f.readlines()
+    except Exception as e:
+        print(e)
+    lines = [line.strip() for line in lines]
+    return lines
+    
 
 def get_discussion_id(url:str) -> str:
     """
@@ -20,7 +36,15 @@ def get_discussion_id(url:str) -> str:
     id = bl[0].strip('\"')
     return id
 
-def save_json(data, title) -> None:
+
+def get_guardian_json(url:str) -> dict:
+    p = 'http://discussion.theguardian.com/discussion-api/discussion/' + get_discussion_id(url)
+    response = requests.get(p)
+    data_dict = response.json()
+    return data_dict
+
+
+def save_json(data:dict, title:str) -> None:
     """
     Saves json file
     """
@@ -35,10 +59,12 @@ def save_json(data, title) -> None:
     except:
         print("Failed to save JSON file")
 
+
 def remove_html_tags(text:str) -> str:
     """Remove html tags from a string"""
     clean = re.compile('<.*?>')
     return re.sub(clean, '', text)
+
 
 def maxqda_format(all_data, title:str, save:bool):
     """Creates a dataframe from the input data. Formats the dataframe for use with MAXQDA, and optionally saves."""
@@ -63,18 +89,8 @@ def maxqda_format(all_data, title:str, save:bool):
         except:
             print('Failed to save csv file')
 
-def main():
-    ### CHANGE THESE ###
-    url = 'https://www.theguardian.com/tv-and-radio/tvandradioblog/2014/may/12/generation-war-bbc-nazi-germany'
-    save = True
-    ####################
 
-
-    #comments_and_responses = []
-    p = 'http://discussion.theguardian.com/discussion-api/discussion/' + get_discussion_id(url)
-    response = requests.get(p)
-    data_dict = response.json()
-    
+def parse_json(data_dict:dict) -> tuple[list, str]:
     x = data_dict['discussion']
     data_rows = []
     for comment in x['comments']:
@@ -101,12 +117,27 @@ def main():
                 data_rows.append(df_row)
     
     title = x['title']
-    print(f"Title: {title}")
-    cleaned_title = title.translate(str.maketrans('', '', string.punctuation))
+    return data_rows, title
 
-    maxqda_format(data_rows, cleaned_title, save)
-    if save:
-        save_json(data_dict, cleaned_title)
+
+def clean_string(input:str) -> str:
+    """Remove punctuation from a string."""
+    return input.translate(str.maketrans('', '', string.punctuation))
+
+
+def main():
+    urls = read_urls()
+    save = True
+    
+    for url in urls:
+        data_dict = get_guardian_json(url)
+        data_rows, title = parse_json(data_dict)
+        print(f"Title: {title}")
+        cleaned_title = clean_string(title)
+        maxqda_format(data_rows, cleaned_title, save)
+        if save:
+            save_json(data_dict, cleaned_title)
+
 
 if __name__ == '__main__':
     main()
